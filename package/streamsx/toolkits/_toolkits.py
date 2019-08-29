@@ -6,6 +6,14 @@
 import requests
 import json
 import re
+from tempfile import gettempdir
+import random
+import wget
+import string
+import os
+import tarfile
+import shutil
+
 
 # GitHub repos of product toolkits
 tkprodList = ['com.ibm.streamsx.avro',
@@ -61,6 +69,88 @@ def _sorted_version(an_iterable):
     return sorted(an_iterable, key = alphanum_key)
 
 
+def _download_tk(url, name, toolkit_dir):
+    """Downloads and unpacks the toolkit.
+    
+    Args:
+        url(str): the download URL
+        name(str): the subdirectory relative to the temporary directory (/tmp), where the toolkit is unpacked to
+        toolkit_dir(str): the toolkit directory in the archive (where toolkit.xml is located)
+    
+    Returns:
+        str: the absolute toolkit directory
+    """
+    targetdir=gettempdir() + '/' + name
+    rnd = ''.join(random.choice(string.digits) for _ in range(10))
+    tmpfile = gettempdir() + '/' + 'toolkit-' + rnd + '.tgz'
+    if os.path.isdir(targetdir):
+        shutil.rmtree(targetdir)
+    if os.path.isfile(tmpfile):
+        os.remove(tmpfile)
+    wget.download(url, tmpfile)
+    #print (tmpfile + ": " + str(os.stat(tmpfile)))
+    tar = tarfile.open(tmpfile, "r:gz")
+    tar.extractall(path=targetdir)
+    tar.close()
+    os.remove(tmpfile)
+    toolkit_path = targetdir + '/' + toolkit_dir
+    tkfile = toolkit_path + '/toolkit.xml'
+    if os.path.isfile(tkfile):
+        f = open(tkfile, "r")
+        for x in f:
+            if 'toolkit name' in x:
+                version_dump = re.sub(r' requiredProductVersion="[^ ]*"', '', x)
+                print('\n'+version_dump)
+                break
+        f.close()
+    return toolkit_path
+
+
+def download_toolkit(toolkit_name, repository_name=None, url=None, dir_name=None):
+    """Downloads the latest SPL toolkit from GitHub for the given toolkit name.
+
+    Example for adding the com.ibm.streams.nlp toolkit with latest toolkit from GitHub::
+
+        import streamsx.toolkits as tkutils
+        # download toolkit from GitHub
+        location = tkutils.download_toolkit('com.ibm.streamsx.nlp')
+        # add toolkit to topology
+        streamsx.spl.toolkit.add_toolkit(topo, location)
+
+    Args:
+        toolkit_name(str): the toolkit directory in the archive (where toolkit.xml is located), for example "com.ibm.streamsx.nlp"
+        repository_name(str): name of the GitHub repository at "github.com/IBMStreams", for example "streamsx.nlp". Set this parameter if repository name is not part of toolkit name without "com.ibm.".
+        url(str): the download URL, apply link to toolkit archive (*.tgz) to be downloaded. 'https://github.com/IBMStreams/<repository_name>/releases/latest' is used per default.
+        dir_name(str): the subdirectory relative to the temporary directory (/tmp), where the toolkit is unpacked to
+        
+    
+    Returns:
+        str: the absolute toolkit directory
+
+    """
+    if repository_name is None:
+        repo_name = toolkit_name[8::]
+    else:
+        repo_name = repository_name
+
+    if dir_name is None:
+        dir_name = toolkit_name
+
+    if url is None:
+        # get latest toolkit
+        r = requests.get('https://github.com/IBMStreams/'+repo_name+'/releases/latest')
+        r.raise_for_status()
+        if r.text is not None:
+            s = re.search(r'/IBMStreams/'+repo_name+'/releases/download/.*tgz', r.text).group()
+            url = 'https://github.com/' + s
+    if url is not None:
+        print('Download: ' + url)
+        spl_toolkit = _download_tk(url, dir_name, toolkit_name)
+    else:
+        raise ValueError("Invalid URL")
+    return spl_toolkit
+
+
 def get_pypi_packages():
     """ Discover streamsx python packages on pypi.org
     
@@ -77,6 +167,7 @@ def get_pypi_packages():
             print(package_name + ' - ' + latest_version)
             pypi_packages[package_name]=latest_version
     return pypi_packages
+
 
 def get_installed_packages():
     """ Discover installed `streamsx` python packages
