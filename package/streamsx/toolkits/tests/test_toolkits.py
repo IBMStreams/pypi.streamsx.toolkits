@@ -78,7 +78,7 @@ class TestDownloadToolkit(unittest.TestCase):
     def test_download_latest_with_target_dir(self):
         topology = Topology()
         target_dir = 'pypi.streamsx.nlp.tests-' + str(uuid.uuid4()) + '/nlp-toolkit'
-        location = toolkits.download_toolkit('com.ibm.streamsx.nlp', dir_name=target_dir)
+        location = toolkits.download_toolkit('com.ibm.streamsx.nlp', target_dir=target_dir)
         print('toolkit location: ' + location)
         streamsx.spl.toolkit.add_toolkit(topology, location)
 
@@ -86,6 +86,6 @@ class TestDownloadToolkit(unittest.TestCase):
         topology = Topology()
         target_dir = 'pypi.streamsx.nlp.tests-' + str(uuid.uuid4()) + '/nlp-toolkit'
         url = 'https://github.com/IBMStreams/streamsx.nlp/releases/download/v1.9.0/streamsx.nlp.toolkits-1.9.0-20190404-1329.tgz'
-        location = toolkits.download_toolkit('com.ibm.streamsx.nlp', url=url, dir_name=target_dir)
+        location = toolkits.download_toolkit('com.ibm.streamsx.nlp', url=url, target_dir=target_dir)
         print('toolkit location: ' + location)
         streamsx.spl.toolkit.add_toolkit(topology, location)
