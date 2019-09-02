@@ -15,7 +15,7 @@ import tarfile
 import shutil
 
 
-# GitHub repos of product toolkits
+# product toolkits
 tkprodList = ['com.ibm.streamsx.avro',
               'com.ibm.streamsx.datetime',
               'com.ibm.streamsx.dps',
@@ -80,7 +80,7 @@ def _download_tk(url, name, toolkit_dir):
     Returns:
         str: the absolute toolkit directory
     """
-    targetdir=gettempdir() + '/' + name
+    targetdir = os.path.join(gettempdir(), name)
     rnd = ''.join(random.choice(string.digits) for _ in range(10))
     tmpfile = gettempdir() + '/' + 'toolkit-' + rnd + '.tgz'
     if os.path.isdir(targetdir):
@@ -106,8 +106,8 @@ def _download_tk(url, name, toolkit_dir):
     return toolkit_path
 
 
-def download_toolkit(toolkit_name, repository_name=None, url=None, dir_name=None):
-    """Downloads the latest SPL toolkit from GitHub for the given toolkit name.
+def download_toolkit(toolkit_name, repository_name=None, url=None, target_dir=None):
+    r"""Downloads the latest SPL toolkit from GitHub for the given toolkit name.
 
     Example for adding the com.ibm.streams.nlp toolkit with latest toolkit from GitHub::
 
@@ -120,21 +120,22 @@ def download_toolkit(toolkit_name, repository_name=None, url=None, dir_name=None
     Args:
         toolkit_name(str): the toolkit directory in the archive (where toolkit.xml is located), for example "com.ibm.streamsx.nlp"
         repository_name(str): name of the GitHub repository at "github.com/IBMStreams", for example "streamsx.nlp". Set this parameter if repository name is not part of toolkit name without "com.ibm.".
-        url(str): the download URL, apply link to toolkit archive (*.tgz) to be downloaded. 'https://github.com/IBMStreams/<repository_name>/releases/latest' is used per default.
-        dir_name(str): the subdirectory relative to the temporary directory (/tmp), where the toolkit is unpacked to
-        
+        url(str): the download URL, apply link to toolkit archive (\*.tgz) to be downloaded. 'https://github.com/IBMStreams/REPOSITORY-NAME/releases/latest' is used per default.
+        target_dir(str): the directory where the toolkit is unpacked to. If a relative path is given,
+            the target_dir is appended to the system temporary directory, for example to /tmp on Unix/Linux systems.
     
     Returns:
-        str: the absolute toolkit directory
+        str: the absolute path of the toolkit directory
 
+    .. note:: This function requires an outgoing Internet connection
     """
     if repository_name is None:
         repo_name = toolkit_name[8::]
     else:
         repo_name = repository_name
 
-    if dir_name is None:
-        dir_name = toolkit_name
+    if target_dir is None:
+        target_dir = toolkit_name
 
     if url is None:
         # get latest toolkit
@@ -145,33 +146,44 @@ def download_toolkit(toolkit_name, repository_name=None, url=None, dir_name=None
             url = 'https://github.com/' + s
     if url is not None:
         print('Download: ' + url)
-        spl_toolkit = _download_tk(url, dir_name, toolkit_name)
+        spl_toolkit = _download_tk(url, target_dir, toolkit_name)
     else:
         raise ValueError("Invalid URL")
     return spl_toolkit
 
 
-def get_pypi_packages():
-    """ Discover streamsx python packages on pypi.org
+def get_pypi_packages(package_name=None):
+    """ Discover the latest Python packages available on pypi.org.
     
-    Requires Internet connection
+    Args:
+        package_name(str): the name of the Python package to be searched for. If ``None`` is given,
+        the function searches for all available streamsx Python packages.
+        
+    Returns:
+        dict: A dictionary with mappings from Python package name to the package version
 
+    .. note:: This function requires an outgoing Internet connection
     """
     pypi_packages = {}
-    for package_name in pypackagelist:
-        r = requests.get('https://pypi.python.org/pypi/'+package_name+'/json')
+    _pkg_list = pypackagelist if package_name is None else [package_name]
+
+    for pkg_name in _pkg_list:
+        r = requests.get('https://pypi.python.org/pypi/'+pkg_name+'/json')
         if r.status_code==200:
             data_json = r.json()
             releases = list(data_json["releases"].keys())
             latest_version = _sorted_version(releases)[-1]
-            print(package_name + ' - ' + latest_version)
-            pypi_packages[package_name]=latest_version
+            print(pkg_name + ' - ' + latest_version)
+            pypi_packages[pkg_name]=latest_version
     return pypi_packages
 
 
 def get_installed_packages():
-    """ Discover installed `streamsx` python packages
-    """
+    """ Discover installed `streamsx` python packages in your Python environment.
+
+     Returns:
+        dict: A dictionary with mappings from Python package name to the package version
+   """
     installed_packages = {}
     for pkg_name in pypackagelist:
         try:
@@ -190,7 +202,15 @@ def get_installed_packages():
 
 
 def get_build_service_toolkits(streams_cfg):
-    """ Discover toolkits on IBM Streams build service.   
+    """ Discover toolkits on IBM Streams build service.
+    
+    Args:
+        streams_cfg(dict): Service instance details of the IBM Streams instance.
+        
+    Returns:
+        dict: A dictionary with mappings from toolkit name to the toolkit version
+
+    .. warning:: The function can be used only in IBM Cloud Pak for Data
     """
     build_service_toolkits = {}
     token = streams_cfg['service_token']
@@ -209,14 +229,24 @@ def get_build_service_toolkits(streams_cfg):
     return build_service_toolkits
         
 
-def get_github_toolkits():
-    """ Discover product toolkits from public GitHub.
+def get_github_toolkits(toolkit_name=None):
+    """ Discover the latest releases of product toolkits available on public GitHub.
     
-    Requires Internet connection
-    
+    Args:
+        toolkit_name(str): the name of the toolkit to be searched for. If ``None`` is given,
+        the function searches for all product toolkits.
+        
+    Returns:
+        dict: A dictionary with mappings from toolkit name to the toolkit version
+
+    .. note:: This function requires an outgoing Internet connection
     """
+    if toolkit_name is None:
+        _tk_list = tkprodList
+    else:
+        _tk_list = [toolkit_name]
     github_toolkits = {}
-    for tk_name in tkprodList:
+    for tk_name in _tk_list:
         repo_name = tk_name[8::]
         r = requests.get('https://github.com/IBMStreams/'+repo_name+'/releases/latest')
         #print (r.url)
