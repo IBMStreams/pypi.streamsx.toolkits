@@ -45,6 +45,7 @@ pypackagelist = ['streamsx',
                  'streamsx.avro',
                  'streamsx.database',
                  'streamsx.elasticsearch',
+                 'streamsx.endpoint',
                  'streamsx.eventstore',
                  'streamsx.eventstreams',
                  'streamsx.hbase', 
@@ -53,6 +54,7 @@ pypackagelist = ['streamsx',
                  'streamsx.kafka',
                  'streamsx.objectstorage',
                  'streamsx.pmml',
+                 'streamsx.toolkits',
                 ]
 
 
