@@ -41,45 +41,49 @@ class Test(unittest.TestCase):
 class TestDownloadToolkit(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
-        # delete downloaded *.tgz (should be deleted in _download_toolkit(...)
-        for f in glob.glob(gettempdir() + '/toolkit-[0-9]*.tgz'):
-            try:
-                os.remove(f)
-                print ('file removed: ' + f)
-            except:
-                print('Error deleting file: ', f)
         # delete unpacked toolkits
         for d in glob.glob(gettempdir() + '/pypi.streamsx.nlp.tests-*'):
             if os.path.isdir(d):
                 shutil.rmtree(d)
-        for d in glob.glob(gettempdir() + '/com.ibm.streamsx.nlp'):
+        for d in glob.glob(gettempdir() + '/com.ibm.streamsx.nlp*'):
+            if os.path.isdir(d):
+                shutil.rmtree(d)
+        for d in glob.glob(gettempdir() + '/samples*'):
             if os.path.isdir(d):
                 shutil.rmtree(d)
 
     def test_download_latest(self):
         topology = Topology()
         location = toolkits.download_toolkit('com.ibm.streamsx.nlp')
-        print('toolkit location: ' + location)
+        print('\ntoolkit location: ' + location)
         streamsx.spl.toolkit.add_toolkit(topology, location)
+
+    def test_download_samples(self):
+        topology = Topology()
+        location = toolkits.download_toolkit('samples', repository_name='streamsx.nlp')
+        print('\nsamples location: ' + location)
+        files = os.listdir(location)
+        for name in files:
+            print(name)
 
     def test_download_latest_with_repo(self):
         topology = Topology()
         location = toolkits.download_toolkit('com.ibm.streamsx.nlp', repository_name='streamsx.nlp')
-        print('toolkit location: ' + location)
+        print('\ntoolkit location: ' + location)
         streamsx.spl.toolkit.add_toolkit(topology, location)
 
     def test_download_with_url(self):
         topology = Topology()
         url = 'https://github.com/IBMStreams/streamsx.nlp/releases/download/v1.9.0/streamsx.nlp.toolkits-1.9.0-20190404-1329.tgz'
         location = toolkits.download_toolkit('com.ibm.streamsx.nlp', url=url)
-        print('toolkit location: ' + location)
+        print('\ntoolkit location: ' + location)
         streamsx.spl.toolkit.add_toolkit(topology, location)
 
     def test_download_latest_with_target_dir(self):
         topology = Topology()
         target_dir = 'pypi.streamsx.nlp.tests-' + str(uuid.uuid4()) + '/nlp-toolkit'
         location = toolkits.download_toolkit('com.ibm.streamsx.nlp', target_dir=target_dir)
-        print('toolkit location: ' + location)
+        print('\ntoolkit location: ' + location)
         streamsx.spl.toolkit.add_toolkit(topology, location)
 
     def test_download_with_url_and_target_dir(self):
@@ -87,5 +91,6 @@ class TestDownloadToolkit(unittest.TestCase):
         target_dir = 'pypi.streamsx.nlp.tests-' + str(uuid.uuid4()) + '/nlp-toolkit'
         url = 'https://github.com/IBMStreams/streamsx.nlp/releases/download/v1.9.0/streamsx.nlp.toolkits-1.9.0-20190404-1329.tgz'
         location = toolkits.download_toolkit('com.ibm.streamsx.nlp', url=url, target_dir=target_dir)
-        print('toolkit location: ' + location)
+        print('\ntoolkit location: ' + location)
         streamsx.spl.toolkit.add_toolkit(topology, location)
+

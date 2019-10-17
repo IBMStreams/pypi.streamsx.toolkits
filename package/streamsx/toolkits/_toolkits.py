@@ -13,7 +13,7 @@ import string
 import os
 import tarfile
 import shutil
-
+import glob
 
 # product toolkits
 tkprodList = ['com.ibm.streamsx.avro',
@@ -69,6 +69,18 @@ def _sorted_version(an_iterable):
     return sorted(an_iterable, key = alphanum_key)
 
 
+def _clean_dir(tmp_path, toolkit_dir, target_dir):
+    for i in glob.glob(os.path.join(tmp_path, "*")):
+        if os.path.isfile(i):
+            os.remove(os.path.realpath(i))
+        elif os.path.isdir(i):
+            dirname = os.path.basename(i)
+            if toolkit_dir != dirname:
+                shutil.rmtree(os.path.realpath(i))
+    shutil.move(os.path.join(tmp_path, toolkit_dir), target_dir)
+    shutil.rmtree(tmp_path)
+
+
 def _download_tk(url, name, toolkit_dir):
     """Downloads and unpacks the toolkit.
     
@@ -80,9 +92,12 @@ def _download_tk(url, name, toolkit_dir):
     Returns:
         str: the absolute toolkit directory
     """
-    targetdir = os.path.join(gettempdir(), name)
     rnd = ''.join(random.choice(string.digits) for _ in range(10))
+    targetdir = os.path.join(gettempdir(), name) + '-' + rnd
+    tmp_dir = targetdir + 'tmp'
     tmpfile = gettempdir() + '/' + 'toolkit-' + rnd + '.tgz'
+    if os.path.isdir(tmp_dir):
+        shutil.rmtree(tmp_dir)
     if os.path.isdir(targetdir):
         shutil.rmtree(targetdir)
     if os.path.isfile(tmpfile):
@@ -90,10 +105,15 @@ def _download_tk(url, name, toolkit_dir):
     wget.download(url, tmpfile)
     #print (tmpfile + ": " + str(os.stat(tmpfile)))
     tar = tarfile.open(tmpfile, "r:gz")
-    tar.extractall(path=targetdir)
+    tar.extractall(path=tmp_dir)
     tar.close()
+    # delete archive file
     os.remove(tmpfile)
-    toolkit_path = targetdir + '/' + toolkit_dir
+    # clean-up all non toolkit dirs
+    _clean_dir(tmp_dir, toolkit_dir, targetdir)
+    # final toolkit location
+    toolkit_path = targetdir
+    # dump toolkit version
     tkfile = toolkit_path + '/toolkit.xml'
     if os.path.isfile(tkfile):
         f = open(tkfile, "r")
