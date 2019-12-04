@@ -95,7 +95,7 @@ def _download_tk(url, name, toolkit_dir):
         str: the absolute toolkit directory
     """
     rnd = ''.join(random.choice(string.digits) for _ in range(10))
-    targetdir = os.path.join(gettempdir(), name) + '-' + rnd
+    targetdir = os.path.join(gettempdir(), name)
     tmp_dir = targetdir + 'tmp'
     tmpfile = gettempdir() + '/' + 'toolkit-' + rnd + '.tgz'
     if os.path.isdir(tmp_dir):
@@ -157,7 +157,8 @@ def download_toolkit(toolkit_name, repository_name=None, url=None, target_dir=No
         repo_name = repository_name
 
     if target_dir is None:
-        target_dir = toolkit_name
+        rnd = ''.join(random.choice(string.digits) for _ in range(10))
+        target_dir = toolkit_name + '-' + rnd
 
     if url is None:
         # get latest toolkit
