@@ -396,7 +396,7 @@ def create_truststore(trusted_cert, store_filepath, store_passwd=None):
             _cert = OpenSSL.crypto.load_certificate (OpenSSL.crypto.FILETYPE_PEM, bytes(_ca_cert_pem, 'utf-8'))
             _ca_cert_der = OpenSSL.crypto.dump_certificate (OpenSSL.crypto.FILETYPE_ASN1, _cert)
         except OpenSSL.crypto.Error as e:
-            print("Error: Processing trusted certificate failed.", file=sys.stderr)
+            print('Error: Processing trusted certificate failed.', file=sys.stderr)
             raise
         _alias = 'ca_cert-' + str(i)
         _store_entry = jks.TrustedCertEntry.new (_alias, _ca_cert_der)
