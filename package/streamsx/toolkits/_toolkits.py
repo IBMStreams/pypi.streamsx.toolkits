@@ -304,7 +304,7 @@ def _generate_password(len=16):
     Returns:
         str: the passowrd
         
-    .. since:: 1.1
+    .. versionadded:: 1.1
     """
     return ''.join(random.choice(string.ascii_uppercase + string.digits + string.ascii_lowercase) for _ in range(len))
 
@@ -371,6 +371,7 @@ def create_truststore(trusted_cert, store_filepath, store_passwd=None):
 
     Returns:
         str: the generated or given password of the truststore
+    .. versionadded:: 1.1
     """
     if isinstance(trusted_cert, str):
         _cert_list = [trusted_cert]
@@ -481,6 +482,7 @@ def create_keystore(client_cert, client_private_key, store_filepath, store_passw
 
     Returns:
         str: the generated or given password of the keystore and the private key
+    .. versionadded:: 1.1
     """
     _client_cert_pem = _try_read_from_file(client_cert)
     if not '---BEGIN' in _client_cert_pem:
