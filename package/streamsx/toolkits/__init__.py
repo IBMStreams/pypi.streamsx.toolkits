@@ -11,7 +11,8 @@ Provides provides some utility functions to work with SPL toolkits, for example 
     
 """
 
-__version__='1.0.1'
+__version__='1.1.0'
 
-__all__ = ['download_toolkit', 'get_pypi_packages', 'get_installed_packages', 'get_build_service_toolkits', 'get_github_toolkits']
-from streamsx.toolkits._toolkits import download_toolkit, get_pypi_packages, get_installed_packages, get_build_service_toolkits, get_github_toolkits
+__all__ = ['create_keystore', 'create_truststore', 'download_toolkit', 'get_pypi_packages', 'get_installed_packages', 'get_build_service_toolkits', 'get_github_toolkits']
+from streamsx.toolkits._toolkits import create_keystore, create_truststore, \
+    download_toolkit, get_pypi_packages, get_installed_packages, get_build_service_toolkits, get_github_toolkits
