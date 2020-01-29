@@ -371,6 +371,9 @@ def create_truststore(trusted_cert, store_filepath, store_passwd=None):
 
     Returns:
         str: the generated or given password of the truststore
+
+    **See also:** :py:func:`create_keystore`, :py:func:`extend_truststore`
+    
     .. versionadded:: 1.1
     """
     if isinstance(trusted_cert, str):
@@ -405,9 +408,71 @@ def create_truststore(trusted_cert, store_filepath, store_passwd=None):
         i = i + 1
     keystore = jks.KeyStore.new('jks', _storeEntries)
     keystore.save(store_filepath, _passwd)
-    #print('truststore file ' + store_filepath + ' generated. Store password is ' + _passwd)
-    #print('Copy this file into the etc/ directory of your Streams application.')
     return _passwd
+
+
+def extend_truststore(trusted_cert, store_filepath, store_passwd):
+    """Extends an existing truststore by trusted certificate entries.
+
+    Example::
+
+        store_file = '/tmp/truststore.jks'
+        store_passwd = create_truststore('/tmp/db.crt', store_filepath=store_file)
+        # add two more certificates:
+        extend_truststore(['/tmp/mqtt.crt', '/tmp/kafka.crt'],
+                          store_filepath=store_file,
+                          store_passwd=store_passwd)
+    
+    Args:
+        trusted_cert(list|str): a list of filenames with trusted certificates in PEM format or the certificates literally
+        store_filepath(str): the filename of the truststore file. The truststore must exist and be writable.
+        store_passwd(str): the password for the given truststore.
+
+    Returns:
+        list: the aliases of the added entries
+
+    **See also:** :py:func:`create_truststore`
+    
+    .. versionadded:: 1.2
+    """
+    if isinstance(trusted_cert, str):
+        _cert_list = [trusted_cert]
+    elif isinstance(trusted_cert, list):
+        # must not be empty
+        if trusted_cert:
+            _cert_list = trusted_cert
+        else:
+            raise ValueError('trusted_cert must not be an empty list')
+    else:
+        raise TypeError('trusted_cert must be of str or list type')
+    
+    _keystore = jks.KeyStore.load(store_filepath, store_passwd, try_decrypt_keys=False)
+    _entries = _keystore.entries
+    _aliases = set(_entries.keys())
+    _added_aliases = list()
+    i = 0
+    for _crt in _cert_list:
+        _ca_cert_pem = _try_read_from_file(_crt)
+        if not '---BEGIN' in _ca_cert_pem:
+            warnings.warn('trusted certificate ' + _crt + ' does not look like in PEM format; no BEGIN anchor found', stacklevel=3)
+        try:
+            _cert = OpenSSL.crypto.load_certificate (OpenSSL.crypto.FILETYPE_PEM, bytes(_ca_cert_pem, 'utf-8'))
+            _ca_cert_der = OpenSSL.crypto.dump_certificate (OpenSSL.crypto.FILETYPE_ASN1, _cert)
+        except OpenSSL.crypto.Error as e:
+            print('Error: Processing trusted certificate failed.', file=sys.stderr)
+            raise
+        
+        _alias = 'ca_cert-' + str(i)
+        while _alias in _aliases:
+            i = i + 1
+            _alias = 'ca_cert-' + str(i)
+        _store_entry = jks.TrustedCertEntry.new (_alias, _ca_cert_der)
+        _aliases.add(_alias)
+        _entries[_alias] = _store_entry
+        _added_aliases.append(_alias)
+        i = i + 1
+    _keystore.save(store_filepath, store_passwd)
+    return _added_aliases
 
 
 def create_keystore(client_cert, client_private_key, store_filepath, store_passwd=None):
@@ -477,11 +542,14 @@ def create_keystore(client_cert, client_private_key, store_filepath, store_passw
     Args:
         client_cert(str): the filename with a client certificate in PEM format or the certificate itself
         client_private_key(str): the filename with a private key in PEM format or the private key itself
-        store_filepath(str): the filename of the truststore file. The location must be writable. Intermediate directories are not created.
+        store_filepath(str): the filename of the keystore file. The location must be writable. Intermediate directories are not created.
         store_passwd(str): the password for the private key and the keystore. When ``None``, a 16 characters password is generated.
 
     Returns:
         str: the generated or given password of the keystore and the private key
+        
+    **See also:** :py:func:`create_truststore`, :py:func:`extend_keystore`
+    
     .. versionadded:: 1.1
     """
     _client_cert_pem = _try_read_from_file(client_cert)
@@ -517,6 +585,76 @@ def create_keystore(client_cert, client_private_key, store_filepath, store_passw
         privateKeyEntry.encrypt(_passwd)
     keystore = jks.KeyStore.new('jks', [privateKeyEntry])
     keystore.save(store_filepath, _passwd)
-    #print('keystore file ' + store_filepath + ' generated. Store password is ' + _passwd)
-    #print('Copy this file into the etc/ directory of your Streams application.')
     return _passwd
+
+
+def extend_keystore(client_cert, client_private_key, store_filepath, store_passwd):
+    """Extends a JKS type keystore with a client certificate and its private RSA key.
+    
+    The alias of the certificate in the keystore will be client_cert-*<n>*.
+    The private key will be encrypted with the store password.
+    
+    Example::
+    
+        store_file = '/tmp/keystore.jks'
+        store_passwd = create_keystore(client_cert='/tmp/db_client.crt',
+                                       client_private_key='/tmp/db_client.key',
+                                       store_filepath=store_file)
+        extend_keystore(client_cert='/tmp/mqtt_client.crt',
+                        client_private_key='/tmp/mqtt_client.key',
+                        store_filepath=store_file,
+                        store_passwd=store_passwd)
+    
+    Args:
+        client_cert(str): the filename with a client certificate in PEM format or the certificate itself
+        client_private_key(str): the filename with a private key in PEM format or the private key itself
+        store_filepath(str): the filename of the keystore file. The file must exist and be writable.
+        store_passwd(str): the password for the keystore. It is also used to encrypt the given private key.
+        
+    Returns:
+        list: the aliases of the added entries (currently a list with one element)
+        
+    **See also:** :py:func:`create_keystore`
+    
+    .. versionadded:: 1.2
+    """
+    _client_cert_pem = _try_read_from_file(client_cert)
+    if not '---BEGIN' in _client_cert_pem:
+        warnings.warn('client certificate ' + client_cert + ' does not look like in PEM format; no BEGIN anchor found', stacklevel=3)
+    _client_key_pem = _try_read_from_file(client_private_key)
+    if not '---BEGIN' in _client_key_pem:
+        warnings.warn('client private key ' + client_private_key + ' does not look like in PEM format; no BEGIN anchor found', stacklevel=3)
+    _keystore = jks.KeyStore.load(store_filepath, store_passwd, try_decrypt_keys=False)
+    _entries = _keystore.entries
+    _aliases = set(_entries.keys())
+
+    try:
+        _cert = OpenSSL.crypto.load_certificate (OpenSSL.crypto.FILETYPE_PEM, bytes(_client_cert_pem, 'utf-8'))
+        _client_cer_der = OpenSSL.crypto.dump_certificate (OpenSSL.crypto.FILETYPE_ASN1, _cert)
+    except OpenSSL.crypto.Error as e:
+        print('Error: Processing client certificate failed.', file=sys.stderr)
+        raise
+    try:
+        _key = OpenSSL.crypto.load_privatekey (OpenSSL.crypto.FILETYPE_PEM, bytes(_client_key_pem, 'utf-8'))
+        _client_key_der = OpenSSL.crypto.dump_privatekey (OpenSSL.crypto.FILETYPE_ASN1, _key)
+    except OpenSSL.crypto.Error as e:
+        print('Error: Processing client private key failed.', file=sys.stderr)
+        raise
+    i = 0
+    _alias = 'client_cert-' + str(i)
+    while _alias in _aliases:
+        i = i + 1
+        _alias = 'client_cert-' + str(i)
+
+    try:
+        privateKeyEntry = jks.PrivateKeyEntry.new(_alias, [_client_cer_der], _client_key_der, 'rsa_raw')
+    except Exception:
+        print('Error: Processing client private key failed. Not RSA format?', file=sys.stderr)
+        raise
+    
+    if privateKeyEntry.is_decrypted():
+        privateKeyEntry.encrypt(store_passwd)
+    
+    _entries[_alias] = privateKeyEntry
+    _keystore.save(store_filepath, store_passwd)
+    return [_alias]
