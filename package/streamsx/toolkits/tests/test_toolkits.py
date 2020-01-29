@@ -102,6 +102,19 @@ class TestCreateJKSStore(unittest.TestCase):
     def test_create_keystore_key_file_not_exists(self):
         self.assertRaises(OpenSSL.crypto.Error, toolkits.create_keystore, self.client_crt_file, "/tmp/not/existing.key",store_filepath="/doesnotmatter.jks")
 
+    def test_extend_keystore_files(self):
+        store_filename = os.path.join(gettempdir(), 'keystore-' + ''.join(random.choice(string.digits) for _ in range(20)) + '.jks')
+        store_passwd = toolkits.create_keystore(self.client_crt_file, self.private_key_file, store_filepath=store_filename)
+        assert os.path.isfile(store_filename)
+        new_aliases = toolkits.extend_keystore(self.client_crt_file, self.private_key_file, store_filepath=store_filename, store_passwd=store_passwd)
+        assert len(new_aliases) == 1
+        
+    def test_extend_truststore_file_list(self):
+        store_filename = os.path.join(gettempdir(), 'truststore-' + ''.join(random.choice(string.digits) for _ in range(20)) + '.jks')
+        store_passwd = toolkits.create_truststore([self.client_ca_crt_file], store_filepath=store_filename)
+        assert os.path.isfile(store_filename)
+        new_aliases = toolkits.extend_truststore([self.ca_crt_file, self.client_ca_crt_file], store_filepath=store_filename, store_passwd=store_passwd)
+        assert len(new_aliases) == 2
 
 class Test(unittest.TestCase):
 
