@@ -44,6 +44,7 @@ tkprodList = ['com.ibm.streamsx.avro',
               'com.ibm.streamsx.objectstorage',
               'com.ibm.streamsx.rabbitmq',
               'com.ibm.streamsx.sparkmllib',
+              'com.ibm.streamsx.sttgateway',
               'com.ibm.streamsx.topology'
             ]
 
@@ -54,13 +55,17 @@ pypackagelist = ['streamsx',
                  'streamsx.endpoint',
                  'streamsx.eventstore',
                  'streamsx.eventstreams',
+                 'streamsx.geospatial',
                  'streamsx.hbase', 
                  'streamsx.hdfs',
                  'streamsx.inet',
+                 'streamsx.jms',
                  'streamsx.kafka',
                  'streamsx.objectstorage',
                  'streamsx.pmml',
+                 'streamsx.sttgateway',
                  'streamsx.toolkits',
+                 'streamsx.wml',
                 ]
 
 
