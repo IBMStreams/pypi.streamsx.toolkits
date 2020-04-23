@@ -11,7 +11,7 @@ Provides provides some utility functions to work with SPL toolkits, for example 
     
 """
 
-__version__='1.2.0'
+__version__='1.2.1'
 
 __all__ = ['create_keystore',
            'extend_keystore',
