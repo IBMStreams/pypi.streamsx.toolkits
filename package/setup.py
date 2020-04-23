@@ -5,7 +5,7 @@ setup(
   packages = ['streamsx.toolkits'],
   include_package_data=True,
   version = streamsx.toolkits.__version__,
-  description = 'Utility functions for IBM Streams SPL toolkits',
+  description = 'Utility functions for IBM Streams topology applications',
   long_description = open('DESC.txt').read(),
   author = 'IBM Streams @ github.com',
   author_email = 'hegermar@de.ibm.com',

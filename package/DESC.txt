@@ -1,7 +1,7 @@
 Overview
 ========
 
-Provides some utility functions to work with SPL toolkits, for example for use in a Python Notebook.
+Provides utility functions to work with SPL toolkits, for example for use in a Python Notebook.
 
 
 Documentation
