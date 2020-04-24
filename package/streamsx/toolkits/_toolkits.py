@@ -61,8 +61,10 @@ pypackagelist = ['streamsx',
                  'streamsx.inet',
                  'streamsx.jms',
                  'streamsx.kafka',
+                 'streamsx.mqtt',
                  'streamsx.objectstorage',
                  'streamsx.pmml',
+                 'streamsx.standard',
                  'streamsx.sttgateway',
                  'streamsx.toolkits',
                  'streamsx.wml',
@@ -227,6 +229,10 @@ def get_installed_packages():
                 import streamsx.topology.context
                 print(pkg_name+' - ' + i.topology.context.__version__)
                 installed_packages[pkg_name] = i.topology.context.__version__
+            elif 'streamsx.standard' in pkg_name:
+                import streamsx.standard._version
+                print(pkg_name+' - ' + i._version.__version__)
+                installed_packages[pkg_name] = i._version.__version__
             else:
                 print(pkg_name+' - ' + i.__version__)
                 installed_packages[pkg_name] = i.__version__
