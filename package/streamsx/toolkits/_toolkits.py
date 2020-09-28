@@ -38,12 +38,10 @@ tkprodList = ['com.ibm.streamsx.avro',
               'com.ibm.streamsx.kafka',
               'com.ibm.streamsx.mail',
               'com.ibm.streamsx.messagehub',
-              'com.ibm.streamsx.messaging',
               'com.ibm.streamsx.mqtt',
               'com.ibm.streamsx.network',
               'com.ibm.streamsx.objectstorage',
               'com.ibm.streamsx.rabbitmq',
-              'com.ibm.streamsx.sparkmllib',
               'com.ibm.streamsx.sttgateway',
               'com.ibm.streamsx.topology'
             ]
@@ -208,6 +206,9 @@ def get_pypi_packages(package_name=None):
         if r.status_code==200:
             data_json = r.json()
             releases = list(data_json["releases"].keys())
+            for v in releases:
+                if ((v.find('a') != -1) or (v.find('b') != -1)):
+                    releases.remove(v) # remove alpha and beta releases
             latest_version = _sorted_version(releases)[-1]
             print(pkg_name + ' - ' + latest_version)
             pypi_packages[pkg_name]=latest_version
