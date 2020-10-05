@@ -20,7 +20,7 @@ setup(
     'Programming Language :: Python :: 3.6',
     'Programming Language :: Python :: 3.7',
   ],
-  install_requires=['streamsx>=1.12.10', 'wget', 'pyOpenSSL==19.0', 'pyJKS==19.0'],
+  install_requires=['streamsx>=1.15.0', 'wget', 'pyOpenSSL==19.0', 'pyJKS==19.0'],
   
   test_suite='nose.collector',
   tests_require=['nose']
