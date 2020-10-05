@@ -242,31 +242,39 @@ def get_installed_packages():
     return installed_packages
 
 
-def get_build_service_toolkits(streams_cfg):
+def get_build_service_toolkits(streams_cfg=None, verify=False):
     """ Discover toolkits on IBM Streams build service.
     
     Args:
-        streams_cfg(dict): Service instance details of the IBM Streams instance.
+        streams_cfg(dict): Service instance details of the IBM Streams instance. If value is None then the external build service endpoint is used.
+        verify(bool): Set to True if SSL verification shall be enabled.
         
+    Example, use the function in IBM Cloud Pak for Data with service instance details retrieved from icpd_util.get_service_details:: 
+
+        from icpd_core import ipcd_util
+        cfg = icpd_util.get_service_details(name='instanceName', instance_type='streams')
+    
+        import streamsx.toolkits as tkutils
+        build_service_toolkits = tkutils.get_build_service_toolkits(cfg)
+        print(build_service_toolkits)
+
     Returns:
         dict: A dictionary with mappings from toolkit name to the toolkit version
-
-    .. warning:: The function can be used only in IBM Cloud Pak for Data
     """
     build_service_toolkits = {}
-    token = streams_cfg['service_token']
-    build_endpoint = streams_cfg['connection_info']['serviceBuildEndpoint']
-    toolkits_url = build_endpoint.replace('/builds', '/toolkits', 1)
-    #print (toolkits_url)
-    r = requests.get(toolkits_url, headers={"Authorization": "Bearer " + token}, verify=False)
-    if r.status_code==200:
-        sr = r.json()
-        #print(sr)
-        for x in sr['toolkits']:
-            print (x['name'] + ' - ' + x['version'])
-            build_service_toolkits[x['name']]=x['version']
+    from streamsx.build import BuildService
+    from streamsx.topology import context
+
+    if streams_cfg is None:
+        buildService = BuildService.of_endpoint(verify=verify)
     else:
-        print(str(r))
+        cfg[context.ConfigParams.SSL_VERIFY] = verify
+        buildService = BuildService.of_service(cfg)
+
+    tks = buildService.get_toolkits()
+    for x in tks:
+        print (x.name + ' - ' + x.version)
+        build_service_toolkits[x.name]=x.version
     return build_service_toolkits
         
 

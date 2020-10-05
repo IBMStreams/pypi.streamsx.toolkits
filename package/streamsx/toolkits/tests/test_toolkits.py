@@ -37,6 +37,14 @@ def _write_text_file(text):
     finally:
         f.close()
 
+def _cp4d_url_env_var():
+    result = True
+    try:
+        os.environ['CP4D_URL']
+    except KeyError: 
+        result = False
+    return result
+
 
 class TestCreateJKSStore(unittest.TestCase):
     def setUp(self):
@@ -119,19 +127,30 @@ class TestCreateJKSStore(unittest.TestCase):
 class Test(unittest.TestCase):
 
     def test_get_github_toolkits(self):
+        print ('\ntest_get_github_toolkits ----------')
         gh_tks = toolkits.get_github_toolkits()
         assert (gh_tks is not None), "Invalid result value"
         assert (isinstance(gh_tks, dict)), "dict type expected"
         print(gh_tks)
 
     def test_get_installed_packages(self):
+        print ('\ntest_get_installed_packages ----------')
         p = toolkits.get_installed_packages()
         assert (p is not None), "Invalid result value"
         assert (isinstance(p, dict)), "dict type expected"
         print(p)
 
     def test_get_pypi_packages(self):
+        print ('\ntest_get_pypi_packages ----------')
         p = toolkits.get_pypi_packages()
+        assert (p is not None), "Invalid result value"
+        assert (isinstance(p, dict)), "dict type expected"
+        print(p)
+
+    @unittest.skipUnless(_cp4d_url_env_var(), "CP4D_URL required")
+    def test_get_build_service_toolkits(self):
+        print ('\ntest_get_build_service_toolkits ----------')
+        p = toolkits.get_build_service_toolkits()
         assert (p is not None), "Invalid result value"
         assert (isinstance(p, dict)), "dict type expected"
         print(p)
