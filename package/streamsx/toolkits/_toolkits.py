@@ -269,8 +269,8 @@ def get_build_service_toolkits(streams_cfg=None, verify=False):
     if streams_cfg is None:
         buildService = BuildService.of_endpoint(verify=verify)
     else:
-        cfg[context.ConfigParams.SSL_VERIFY] = verify
-        buildService = BuildService.of_service(cfg)
+        streams_cfg[context.ConfigParams.SSL_VERIFY] = verify
+        buildService = BuildService.of_service(streams_cfg)
 
     tks = buildService.get_toolkits()
     for x in tks:
